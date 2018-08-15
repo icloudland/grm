@@ -8,6 +8,7 @@ import (
 	"sync"
 	"math/rand"
 	"time"
+	"bytes"
 )
 
 const (
@@ -72,15 +73,20 @@ func (m *GoroutineChannelMap) stop() {
 	//m.grchannels = make(map[string]*GoroutineChannel)
 }
 
-func (m *GoroutineChannelMap) view() {
+func (m *GoroutineChannelMap) view() string {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
+	var buf bytes.Buffer
 	fmt.Println("***********current gorountine***********")
 	for k, _ := range m.grchannels {
 		fmt.Println(k)
+		buf.WriteString(k)
+		buf.WriteString(";")
 	}
 	fmt.Println("****************************************")
+
+	return buf.String()
 
 }
 
@@ -145,8 +151,8 @@ func (gm *GrManager) Stop() {
 	gm.grchannelMap.stop()
 }
 
-func (gm *GrManager) View() {
-	gm.grchannelMap.view()
+func (gm *GrManager) View() string {
+	return gm.grchannelMap.view()
 }
 
 func (gm *GrManager) HasGrchannel(name string) bool {
