@@ -2,13 +2,13 @@ package grm
 
 
 import (
+	"bytes"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
-	"math/rand"
 	"time"
-	"bytes"
 )
 
 const (
@@ -59,7 +59,7 @@ func (m *GoroutineChannelMap) stop() {
 	grNames := make([]string, 0)
 
 	m.mutex.Lock()
-	for name, _ := range m.grchannels {
+	for name := range m.grchannels {
 		grNames = append(grNames, name)
 	}
 	m.mutex.Unlock()
@@ -79,7 +79,7 @@ func (m *GoroutineChannelMap) view() string {
 
 	var buf bytes.Buffer
 	fmt.Println("***********current gorountine***********")
-	for k, _ := range m.grchannels {
+	for k := range m.grchannels {
 		fmt.Println(k)
 		buf.WriteString(k)
 		buf.WriteString(";")
@@ -115,7 +115,7 @@ func (m *GoroutineChannelMap) get(name string) (*GoroutineChannel, bool) {
 	return nil, false
 }
 
-func (m *GoroutineChannelMap) get1(name string) (*GoroutineChannel) {
+func (m *GoroutineChannelMap) get1(name string) *GoroutineChannel {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
 
@@ -167,11 +167,11 @@ func (gm *GrManager) UnRegister(name string) error {
 	return gm.grchannelMap.unregister(name)
 }
 
-func (gm *GrManager) Get1(name string) (*GoroutineChannel) {
+func (gm *GrManager) Get1(name string) *GoroutineChannel {
 	return gm.grchannelMap.get1(name)
 }
 
-func (gm *GrManager) GetMsg(name string) (chan string) {
+func (gm *GrManager) GetMsg(name string) chan string {
 	return gm.grchannelMap.get1(name).msg
 }
 
@@ -298,13 +298,16 @@ func (gm *GrManager) NewTimer2Gr(name string, fc interface{}, dfc interface{}, s
 					}
 
 				}
-				if time.Now().After(dl) {
-					this.grchannelMap.unregister(name)
-					if dfc != nil {
-						dfc.(func(string))(name)
+				if deadLine > time.Nanosecond {
+					if time.Now().After(dl) {
+						this.grchannelMap.unregister(name)
+						if dfc != nil {
+							dfc.(func(string))(name)
+						}
+						return
 					}
-					return
 				}
+
 				t.Reset(internal)
 			}
 		}
